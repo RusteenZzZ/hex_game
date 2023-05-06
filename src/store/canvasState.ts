@@ -31,7 +31,15 @@ export default class CanvasState {
     }
     console.log(Math.ceil(x), Math.ceil(y));
     
-    return this.worldMap.map[Math.ceil(y) - 1][Math.ceil(x) - 1]
+    let hex = null
+    try {
+      hex = this.worldMap.map[Math.ceil(y) - 1][Math.ceil(x) - 1]
+    } catch (e) {
+      console.log("Bad click");
+      return null
+    }
+
+    return hex
   }
 
   draw(ctx: CanvasRenderingContext2D | null) {

@@ -22,14 +22,12 @@ const Canvas: FC = observer(() => {
           setShowModal(true)
         }
       }
-      
+
       canvasState.draw(canvas.getContext('2d'))
       canvas.onmousedown = clickHandler
 
     }
   }, [])
-
-  
 
   return (
     <>
