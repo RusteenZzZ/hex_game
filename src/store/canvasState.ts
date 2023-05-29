@@ -7,7 +7,7 @@ import Hex from "../types/hex";
 
 export default class CanvasState {
   private worldMap: WorldMap
-  private size = 40
+  private size = 60
 
   constructor() {
     makeAutoObservable(this, {}, {autoBind: true})
@@ -15,31 +15,53 @@ export default class CanvasState {
   }
 
   getHexagonByCoordinates(x: number, y: number): Hex | null {
-    x = x - this.worldMap.startX + this.size - this.size/4
-    y = y - this.worldMap.startY
-    
-    x = x / (this.size * 1.5)
-    if(x % 2 < 1) {
-      y = y + Math.sqrt(this.size**2 - (this.size/2)**2)
-    }
+    let est_x = x - this.worldMap.startX + this.size - this.size/4
+    let est_y = y - this.worldMap.startY
 
-    y = y / (2 * Math.sqrt(this.size**2 - (this.size/2)**2))
-    console.log(x, y);
-    if(x % 1 < 0.2 || x % 1 > 0.8 || x < 0 || y < 0) {
-      console.log("Bad click");
-      return null
-    }
-    console.log(Math.ceil(x), Math.ceil(y));
+    let calculated_y = -1
+    let calculated_x = -1
     
-    let hex = null
+    const hexWidth = this.size * 1.5
+    const hexHeight = 2 * Math.sqrt(this.size**2 - (this.size/2)**2)
+
+    est_x = est_x / hexWidth
+    if(est_x % 2 < 1) {
+      est_y = est_y + Math.sqrt(this.size**2 - (this.size/2)**2)
+    }
+    est_y = est_y / hexHeight
+
+    const ceiled_y = Math.ceil(est_y)
+    const ceiled_x = Math.ceil(est_x)
+      
+    const neighbours = []
+    for(let i = -1; i <= 1; i++) {
+      for(let j = -1; j <= 1; j++) {
+        neighbours.push([ceiled_y + i, ceiled_x + j])
+      }
+    }
+    
+    let min_distance = this.size * 4
+    console.log(ceiled_x, ceiled_y);
+    
+    neighbours.forEach(coords => {
+      const y_center = this.worldMap.startY + ((coords[1] % 2 == 1) ? ((coords[0] - 1) * hexHeight) : ((coords[0] - 1) * hexHeight + hexHeight/2))
+      const x_center = this.worldMap.startX + (coords[1] - 1) * hexWidth
+      console.log(coords[1] + " " + coords[0] + " || " + x_center + " " + y_center + " || " + x + " " + y);
+      const dist = Math.sqrt((y_center - y)**2 - (x_center - x)**2)
+      if(dist < min_distance) {
+        min_distance = dist
+        calculated_y = ceiled_y
+        calculated_x = ceiled_x
+      }
+    })
+    console.log(calculated_x, calculated_y);
+    
     try {
-      hex = this.worldMap.map[Math.ceil(y) - 1][Math.ceil(x) - 1]
-    } catch (e) {
+      return this.worldMap.map[calculated_y - 1][calculated_x - 1]
+    } catch(e) {
       console.log("Bad click");
       return null
     }
-
-    return hex
   }
 
   draw(ctx: CanvasRenderingContext2D | null) {

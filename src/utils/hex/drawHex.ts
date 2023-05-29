@@ -42,7 +42,7 @@ const drawHex = (x: number, y: number, size: number, ctx: CanvasRenderingContext
   }
   
   ctx.fill()
-  ctx.lineWidth = 4
+  ctx.lineWidth = 2
   ctx.strokeStyle = "rgb(58, 58, 58)"
   ctx.stroke()
 
