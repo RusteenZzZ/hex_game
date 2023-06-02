@@ -4,64 +4,106 @@ import data from '../maps/map1.json';
 import WorldMap from "../types/map";
 import drawHex from "../utils/hex/drawHex";
 import Hex from "../types/hex";
+import XYCoords from "../types/XYCoords";
+import CRCoords from "../types/CRCoords";
 
 export default class CanvasState {
   private worldMap: WorldMap
-  private size = 60
+  private hexside = 40
+  private hexWidth: number
+  private hexHeight: number
 
   constructor() {
     makeAutoObservable(this, {}, {autoBind: true})
     this.worldMap = data.worldMap
+    const {hHex,wHex} = this.getHexSize(this.hexside);
+    this.hexWidth = wHex
+    this.hexHeight = hHex
   }
 
-  getHexagonByCoordinates(x: number, y: number): Hex | null {
-    let est_x = x - this.worldMap.startX + this.size - this.size/4
-    let est_y = y - this.worldMap.startY
+  getHexagonByCoordinates(clickedPoint: XYCoords): Hex | null {
+    const crCeiledEstimatedHex = this.getEstimatedHexRC(clickedPoint);
+         
+    const neighbours = this.getSurroundingsOfHexCR(crCeiledEstimatedHex);
 
-    let calculated_y = -1
-    let calculated_x = -1
-    
-    const hexWidth = this.size * 1.5
-    const hexHeight = 2 * Math.sqrt(this.size**2 - (this.size/2)**2)
-
-    est_x = est_x / hexWidth
-    if(est_x % 2 < 1) {
-      est_y = est_y + Math.sqrt(this.size**2 - (this.size/2)**2)
-    }
-    est_y = est_y / hexHeight
-
-    const ceiled_y = Math.ceil(est_y)
-    const ceiled_x = Math.ceil(est_x)
-      
-    const neighbours = []
-    for(let i = -1; i <= 1; i++) {
-      for(let j = -1; j <= 1; j++) {
-        neighbours.push([ceiled_y + i, ceiled_x + j])
-      }
-    }
-    
-    let min_distance = this.size * 4
-    console.log(ceiled_x, ceiled_y);
-    
-    neighbours.forEach(coords => {
-      const y_center = this.worldMap.startY + ((coords[1] % 2 == 1) ? ((coords[0] - 1) * hexHeight) : ((coords[0] - 1) * hexHeight + hexHeight/2))
-      const x_center = this.worldMap.startX + (coords[1] - 1) * hexWidth
-      console.log(coords[1] + " " + coords[0] + " || " + x_center + " " + y_center + " || " + x + " " + y);
-      const dist = Math.sqrt((y_center - y)**2 - (x_center - x)**2)
-      if(dist < min_distance) {
-        min_distance = dist
-        calculated_y = ceiled_y
-        calculated_x = ceiled_x
-      }
-    })
-    console.log(calculated_x, calculated_y);
+    const crNeighbour = this.getCRofClosestHexInSurrounding(neighbours, clickedPoint);
     
     try {
-      return this.worldMap.map[calculated_y - 1][calculated_x - 1]
+      const hex = this.worldMap.map[crNeighbour.row - 1][crNeighbour.col - 1]
+
+      if(hex === undefined) {
+        console.log("Bad click");
+        return null
+      }
+      return hex
     } catch(e) {
       console.log("Bad click");
       return null
     }
+  }
+
+  private getXYfromCenterOfTopLeftHex(clickedPoint: XYCoords): XYCoords {
+    let xFromTLHex = clickedPoint.x - this.worldMap.startX + this.hexside - this.hexside / 4;
+    let yFromTLHex = clickedPoint.y - this.worldMap.startY;
+    return { x: xFromTLHex, y: yFromTLHex };
+  }
+
+  private getHexSize(side: number) {
+    const wHex = side * 1.5;
+    const hHex = 2 * Math.sqrt(side ** 2 - (side / 2) ** 2);
+    return {hHex,wHex}
+  }
+
+  private getCRofClosestHexInSurrounding(neighbours: CRCoords[], clickedPoint: XYCoords): CRCoords {
+    let crClosestHex: CRCoords = {row: -1, col: -1}
+
+    let min_distance = this.hexside * 10; // very big number
+    
+    neighbours.forEach(crNeighbour => {
+      const neighbourCenter = this.getXYfromCR(crNeighbour);
+      const dist = this.calcDistance(neighbourCenter, clickedPoint);
+      
+      if (dist < min_distance) {
+        min_distance = dist;
+        crClosestHex = crNeighbour
+      }
+    });
+    
+    return crClosestHex;
+  }
+
+  private calcDistance(a: XYCoords, b: XYCoords): number {
+    return Math.sqrt((a.y - b.y) ** 2 + (a.x - b.x) ** 2);
+  }
+
+  private getXYfromCR(coords: CRCoords): XYCoords {
+    const y_center = this.worldMap.startY + ((coords.col % 2 === 1) ? ((coords.row - 1) * this.hexHeight) : ((coords.row - 1) * this.hexHeight + this.hexHeight / 2));
+    const x_center = this.worldMap.startX + (coords.col - 1) * (this.hexWidth);
+    return { x: x_center, y: y_center };
+  }
+
+  private getEstimatedHexRC(clickedPoint: XYCoords): CRCoords {
+    const XYFromtTopLeft = this.getXYfromCenterOfTopLeftHex(clickedPoint);
+
+    XYFromtTopLeft.x = XYFromtTopLeft.x / this.hexWidth;
+    if (XYFromtTopLeft.x % 2 < 1) {
+      XYFromtTopLeft.y = XYFromtTopLeft.y + Math.sqrt(this.hexside ** 2 - (this.hexside / 2) ** 2);
+    }
+    XYFromtTopLeft.y = XYFromtTopLeft.y / this.hexHeight;
+
+    const ceiled_y = Math.ceil(XYFromtTopLeft.y);
+    const ceiled_x = Math.ceil(XYFromtTopLeft.x);
+    return {row: ceiled_y, col: ceiled_x};
+  }
+
+  private getSurroundingsOfHexCR(crHex: CRCoords): Array<CRCoords> {
+    const neighbours = [];
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        neighbours.push({col: crHex.col + j, row: crHex.row + i});
+      }
+    }
+    return neighbours;
   }
 
   draw(ctx: CanvasRenderingContext2D | null) {
@@ -70,18 +112,18 @@ export default class CanvasState {
       return
     }
     
-    let x = this.worldMap.startX
-    let y = this.worldMap.startY
-    const hexHeight = Math.sqrt(this.size**2 - (this.size/2)**2) * 2
+    const x = this.worldMap.startX
+    const y = this.worldMap.startY
+    const hexHeight = Math.sqrt(this.hexside**2 - (this.hexside/2)**2) * 2
 
     let isLower = false
 
     this.worldMap.map.forEach((mapColumn, column) => {
       mapColumn.forEach((hex, row) => {       
         drawHex(
-          x + row * this.size * 1.5,
+          x + row * this.hexside * 1.5,
           y + column * hexHeight + (isLower ? hexHeight / 2 : 0),
-          this.size,
+          this.hexside,
           ctx,
           hex.type
         )

@@ -16,7 +16,7 @@ const Canvas: FC = observer(() => {
     if(canvas) {
 
       const clickHandler = (e: MouseEvent) => {
-        const hex = canvasState.getHexagonByCoordinates(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop)
+        const hex = canvasState.getHexagonByCoordinates({x: e.pageX - canvas.offsetLeft, y: e.pageY - canvas.offsetTop})
         if(hex) {
           setModalText(hex.description)
           setShowModal(true)
