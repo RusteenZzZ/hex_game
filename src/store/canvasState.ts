@@ -77,7 +77,8 @@ export default class CanvasState {
   }
 
   private getXYfromCR(coords: CRCoords): XYCoords {
-    const y_center = this.worldMap.startY + ((coords.col % 2 === 1) ? ((coords.row - 1) * this.hexHeight) : ((coords.row - 1) * this.hexHeight + this.hexHeight / 2));
+    const y_center = this.worldMap.startY + (coords.row - 1) * this.hexHeight
+      + ((coords.col % 2 === 1) ? 0 : (this.hexHeight / 2));
     const x_center = this.worldMap.startX + (coords.col - 1) * (this.hexWidth);
     return { x: x_center, y: y_center };
   }
