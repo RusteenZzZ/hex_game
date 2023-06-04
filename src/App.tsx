@@ -1,11 +1,11 @@
 import React from 'react';
 import './styles/app.scss'
-import Canvas from './components/Canvas';
+import HexCrawler from './components/HexCrawler';
 
 function App() {
   return (
     <div className="App">
-      <Canvas/>
+      <HexCrawler/>
     </div>
   );
 }

@@ -1,27 +1,26 @@
 import { makeAutoObservable } from "mobx";
 
-import data from '../maps/map1.json';
 import WorldMap from "../types/map";
-import drawHex from "../utils/hex/drawHex";
 import Hex from "../types/hex";
 import XYCoords from "../types/XYCoords";
 import CRCoords from "../types/CRCoords";
+import MapModel from "../mapModel/MapModel";
 
 export default class CanvasState {
-  private worldMap: WorldMap
+  private mapModel
   private hexside = 40
   private hexWidth: number
   private hexHeight: number
 
-  constructor() {
+  constructor(worldMapRaw: WorldMap) {
     makeAutoObservable(this, {}, {autoBind: true})
-    this.worldMap = data.worldMap
-    const {hHex,wHex} = this.getHexSize(this.hexside);
+    this.mapModel = new MapModel(worldMapRaw)
+    const { hHex, wHex } = this.getHexSize(this.hexside);
     this.hexWidth = wHex
     this.hexHeight = hHex
   }
 
-  getHexagonByCoordinates(clickedPoint: XYCoords): Hex | null {
+  public getHexagonByCoordinates(clickedPoint: XYCoords): Hex | null {
     const crCeiledEstimatedHex = this.getEstimatedHexRC(clickedPoint);
          
     const neighbours = this.getSurroundingsOfHexCR(crCeiledEstimatedHex);
@@ -29,7 +28,7 @@ export default class CanvasState {
     const crNeighbour = this.getCRofClosestHexInSurrounding(neighbours, clickedPoint);
     
     try {
-      const hex = this.worldMap.map[crNeighbour.row - 1][crNeighbour.col - 1]
+      const hex = this.mapModel.getMap()[crNeighbour.row - 1][crNeighbour.col - 1]
 
       if(hex === undefined) {
         console.log("Bad click");
@@ -43,8 +42,8 @@ export default class CanvasState {
   }
 
   private getXYfromCenterOfTopLeftHex(clickedPoint: XYCoords): XYCoords {
-    let xFromTLHex = clickedPoint.x - this.worldMap.startX + this.hexside - this.hexside / 4;
-    let yFromTLHex = clickedPoint.y - this.worldMap.startY;
+    let xFromTLHex = clickedPoint.x - this.mapModel.getStartX() + this.hexside - this.hexside / 4;
+    let yFromTLHex = clickedPoint.y - this.mapModel.getStartY();
     return { x: xFromTLHex, y: yFromTLHex };
   }
 
@@ -77,12 +76,12 @@ export default class CanvasState {
   }
 
   private getXYfromCR(coords: CRCoords): XYCoords {
-    const y_center = this.worldMap.startY + (coords.row - 1) * this.hexHeight +
+    const y_center = this.mapModel.getStartY() + (coords.row - 1) * this.hexHeight +
       + ((coords.col % 2 === 1) ?
        0 // The normal column
        :
        (this.hexHeight / 2)); // The column shifted down
-    const x_center = this.worldMap.startX + (coords.col - 1) * (this.hexWidth);
+    const x_center = this.mapModel.getStartX() + (coords.col - 1) * (this.hexWidth);
     return { x: x_center, y: y_center };
   }
 
@@ -110,29 +109,24 @@ export default class CanvasState {
     return neighbours;
   }
 
-  draw(ctx: CanvasRenderingContext2D | null) {
+  public draw(ctx: CanvasRenderingContext2D | null, canvasWidth: number, canvasHeight: number) {
     if(!ctx) {
       console.log('ctx is null')
       return
     }
+
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+    this.mapModel.draw(ctx, this.hexside)
+  }
+
+  public randomizeBySwapping2Hexes(rerender: () => void) {
+    let hex1: CRCoords = {col: 1, row: 1}
+    let hex2: CRCoords = {col: 2, row: 2}
+    let hex1content = this.mapModel.getHex(hex1.col, hex1.row)
+    this.mapModel.setHex(this.mapModel.getHex(hex2.col, hex2.row), hex1.col, hex1.row)
+    this.mapModel.setHex(hex1content, hex2.col, hex2.row)
     
-    const x = this.worldMap.startX
-    const y = this.worldMap.startY
-    const hexHeight = Math.sqrt(this.hexside**2 - (this.hexside/2)**2) * 2
-
-    let isLower = false
-
-    this.worldMap.map.forEach((mapColumn, column) => {
-      mapColumn.forEach((hex, row) => {       
-        drawHex(
-          x + row * this.hexside * 1.5,
-          y + column * hexHeight + (isLower ? hexHeight / 2 : 0),
-          this.hexside,
-          ctx,
-          hex.type
-        )
-        isLower = !isLower
-      })
-    })
+    
+    rerender()
   }
 }

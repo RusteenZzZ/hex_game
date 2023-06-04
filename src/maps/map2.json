@@ -1,0 +1,13 @@
+{
+  "worldMap": {
+    "startX": 80,
+    "startY": 80,
+    "map": [
+        [{"type": "desert", "description": "desert"}, {"type": "desert", "description": "desert"}, {"type": "sea", "description": "river..."}, {"type": "grass", "description": "grass"}],
+        [{"type": "desert", "description": "desert"}, {"type": "sea", "description": "river..."}, {"type": "sea", "description": "river..."}, {"type": "grass", "description": "grass"}],
+        [{"type": "grass", "description": "grass"}, {"type": "forest", "description": "forest"}, {"type": "forest", "description": "forest"}, {"type": "grass", "description": "grass"}],
+        [{"type": "grass", "description": "grass"}, {"type": "mountain", "description": "mountain..."}, {"type": "mountain", "description": "mountain..."}, {"type": "forest", "description": "forest"}],
+        [{"type": "grass", "description": "grass"}, {"type": "grass", "description": "No village here..."}, {"type": "grass", "description": "grass"}, {"type": "grass", "description": "grass"}]
+      ]
+  }
+}
