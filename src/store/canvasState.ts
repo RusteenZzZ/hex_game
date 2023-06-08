@@ -120,13 +120,11 @@ export default class CanvasState {
   }
 
   public randomizeBySwapping2Hexes(rerender: () => void) {
-    let hex1: CRCoords = {col: 1, row: 1}
-    let hex2: CRCoords = {col: 2, row: 2}
+    let hex1: CRCoords = {col: Math.ceil(Math.random() * this.mapModel.colCount()), row: Math.ceil(Math.random() * this.mapModel.rowCount())}
+    let hex2: CRCoords = {col: Math.ceil(Math.random() * this.mapModel.colCount()), row: Math.ceil(Math.random() * this.mapModel.rowCount())}
     let hex1content = this.mapModel.getHex(hex1.col, hex1.row)
     this.mapModel.setHex(this.mapModel.getHex(hex2.col, hex2.row), hex1.col, hex1.row)
     this.mapModel.setHex(hex1content, hex2.col, hex2.row)
-    
-    
     rerender()
   }
 }
